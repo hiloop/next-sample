@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
@@ -14,6 +15,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import axios from 'axios';
+import { matchSorter } from 'match-sorter';
 import Link from 'next/link';
 
 import { FullSizeCenteredFlexBox } from '@/components/styled';
@@ -23,6 +25,8 @@ const isClient = () => typeof window !== 'undefined';
 
 function CSR(props: PropertyGeneralCodeCategoryList) {
   const [isLoading, setIsLoading] = React.useState<Boolean>(false);
+  const [category, setCategory] = React.useState<string>('');
+
   const [data, setData] = React.useState<PropertyGeneralCodeCategoryList>(props);
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -35,6 +39,36 @@ function CSR(props: PropertyGeneralCodeCategoryList) {
         setData(d);
       })
       .finally(() => setIsLoading(false));
+  }
+  const inputEl = React.useRef<string>('');
+  const handleClick = React.useCallback(() => {
+    const param: string = inputEl.current;
+    console.log(param);
+    setIsLoading(true);
+    fetchData(param)
+      .then((d) => {
+        setData(d);
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
+  function filter(event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) {
+    const param = event.target.value;
+    if (!param) {
+      setData(props);
+      return;
+    }
+    const newData = matchSorter(props.propertyGeneralCodeCategoryList, param, {
+      keys: ['category'],
+      threshold: matchSorter.rankings.WORD_STARTS_WITH,
+    });
+    setData({ propertyGeneralCodeCategoryList: newData });
+  }
+  function countCode(param: PropertyGeneralCodeCategoryList): number {
+    let ret = 0;
+    for (const item of param.propertyGeneralCodeCategoryList) {
+      ret = ret + item.propertyGeneralCodeList.length;
+    }
+    return ret;
   }
   if (isLoading) {
     return <Typography variant="h4">Now is Loading....</Typography>;
@@ -67,6 +101,16 @@ function CSR(props: PropertyGeneralCodeCategoryList) {
                   </Button>
                 </Stack>
               </form>
+            </Grid>
+            <Grid item>
+              <Stack direction="row" alignItems="center" spacing={3}>
+                <TextField label="Filtered Category" variant="outlined" onChange={filter} />
+                <Chip
+                  label={`category:${data.propertyGeneralCodeCategoryList.length}`}
+                  color="primary"
+                />
+                <Chip label={`code:${countCode(data)}`} color="secondary" />
+              </Stack>
             </Grid>
             <Grid item>
               <Button
